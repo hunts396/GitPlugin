@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+    id 'maven'
+    id 'org.jetbrains.intellij' version '0.6.5'
+}
+
+group 'com.kvk'
+version '1.0'
+
+// See https://github.com/JetBrains/gradle-intellij-plugin/
+intellij {
+    version '2020.3'
+    plugins 'org.jetbrains.plugins.github'
+
+}
+patchPluginXml {
+    changeNotes """
+      Add change notes here.<br>
+      <em>most HTML tags may be used</em>"""
+}
+
+repositories {
+    mavenCentral()
+    google()
+}
+dependencies {
+    compile 'org.kohsuke:github-api:1.117'
+
+}
