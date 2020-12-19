@@ -56,6 +56,14 @@ public class GPApiForIDEA {
                 JOptionPane.ERROR_MESSAGE
         );
     }
+    public static void showErrorMessage(Exception e){
+        JOptionPane.showMessageDialog(
+                null,
+                e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+        );
+    }
 
     public static void redirectToGeneratingToken(){
         Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;

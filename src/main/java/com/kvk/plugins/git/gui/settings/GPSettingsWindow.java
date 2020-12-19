@@ -28,37 +28,39 @@ public class GPSettingsWindow implements Configurable {
     private JButton removeButton;
 
     private boolean isRemoved;
-    private String prevToken="";
+    private String prevToken = "";
 
-    public GPSettingsWindow(){
+    public GPSettingsWindow() {
 
-        removeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                prevToken="";
-                isRemoved = true;
-                try {
-                    setAccountInfo(null);
-                } catch (IOException ignored) {}
-            }
-        });
-        try {
-            Credentials c = GPApiForIDEA.getCredentials();
-            GHMyself myself = null;
-            if(c!=null) {
-                prevToken = c.getPasswordAsString();
+
+        Credentials c = GPApiForIDEA.getCredentials();
+        GHMyself myself = null;
+        if (c != null) {
+            prevToken = c.getPasswordAsString();
+            try {
+
                 GitHub gitHub = GPApiForIDEA.connect(prevToken);
                 myself = gitHub.getMyself();
                 tokenTextField.setText(prevToken);
+            } catch (IOException e) {
+                GPApiForIDEA.removeCredentials();
             }
-            setAccountInfo(myself);
-
-
-        } catch (IOException e) {
-            GPApiForIDEA.showConnectErrorMessage(e);
         }
+        try {
+            setAccountInfo(myself);
+        } catch (IOException ignored) {}
+        removeButton.addActionListener(e -> {
+            prevToken = "";
+            isRemoved = true;
+            try {
+                setAccountInfo(null);
+            } catch (IOException ignored) {
+            }
+        });
+
 
     }
+
     /*
     UI Account settings
     if account removed or not logged in - delete all text from tokenTextField and offer user to create token
@@ -66,7 +68,7 @@ public class GPSettingsWindow implements Configurable {
     */
     protected void setAccountInfo(GHMyself myself) throws IOException {
 
-        if(myself != null) {
+        if (myself != null) {
             textLabel.setText(myself.getLogin());
             textLabel.setIcon(
                     new ImageIcon(
@@ -114,7 +116,7 @@ public class GPSettingsWindow implements Configurable {
 
 
         String newToken = tokenTextField.getText();
-        if(!newToken.equals(prevToken)){
+        if (!newToken.equals(prevToken)) {
             try {
                 GitHub gitHub = GPApiForIDEA.connect(newToken);
                 GPApiForIDEA.createCredentials(gitHub, newToken);

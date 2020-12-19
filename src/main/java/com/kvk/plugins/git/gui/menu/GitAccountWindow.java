@@ -20,35 +20,58 @@ public class GitAccountWindow extends DialogWrapper {
     private JLabel gitUsername;
     private JBList<GHIssue> issuesList;
     private DefaultListModel<GHIssue> issuesModel;
+    GHMyself myself;
 
-
-
-    public GitAccountWindow(GitHub gitHub) throws IOException {
+    public GitAccountWindow(GitHub gitHub) {
         super(true);
         init();
 
         setTitle("Git Profile");
         mainPanel.setPreferredSize(new Dimension(500, 500));
         setResizable(false);
+        try {
+            myself = gitHub.getMyself();
+            ImageIcon avatarIcon = new ImageIcon(
+                    GPApiForIDEA.resizeAvatar(
+                            ImageIO.read(new URL(myself.getAvatarUrl()))
+                    )
+            );
 
-        GHMyself myself = gitHub.getMyself();
-        ImageIcon avatarIcon = new ImageIcon(
-                GPApiForIDEA.resizeAvatar(
-                        ImageIO.read(new URL(myself.getAvatarUrl()))
-                )
-        );
+            gitUsername.setText(myself.getLogin());
+            gitUsername.setIcon(avatarIcon);
+            setAssignedIssues();
+        } catch (IOException e){
+            GPApiForIDEA.showConnectErrorMessage(e);
+        }
 
-        gitUsername.setText(myself.getLogin());
-        gitUsername.setIcon(avatarIcon);
-        setAssignedIssues(myself);
+
+        Thread refreshIssuesThread = new Thread(() -> {
+            if(myself != null) {
+                while (true) {
+                    try {
+                        setAssignedIssues();
+                        Thread.sleep(3000);
+                    } catch (IOException | InterruptedException e) {
+                        GPApiForIDEA.showErrorMessage(e);
+                    }
+                }
+            }
+        });
+        refreshIssuesThread.start();
     }
 
 
-    private void setAssignedIssues(GHMyself myself) throws IOException {
+    private void setAssignedIssues() throws IOException {
+        ArrayList<GHIssue> issues = new ArrayList<>();
         Map<String, GHRepository> allRepositories = myself.getAllRepositories();
-        for (Map.Entry<String, GHRepository> rep : allRepositories.entrySet()){
-            issuesModel.addAll(rep.getValue().getIssues(GHIssueState.ALL));
+        for (Map.Entry<String, GHRepository> rep : allRepositories.entrySet()) {
+            issues.addAll(rep.getValue().getIssues(GHIssueState.ALL));
         }
+        GHIssue selected = issuesList.getSelectedValue();
+        issuesModel.removeAllElements();
+        issuesModel.addAll(issues);
+        issuesList.setSelectedValue(selected, true);
+
     }
 
     @Override
