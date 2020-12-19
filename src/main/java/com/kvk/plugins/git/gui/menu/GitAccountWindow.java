@@ -67,11 +67,9 @@ public class GitAccountWindow extends DialogWrapper {
         for (Map.Entry<String, GHRepository> rep : allRepositories.entrySet()) {
             issues.addAll(rep.getValue().getIssues(GHIssueState.ALL));
         }
-        GHIssue selected = issuesList.getSelectedValue();
         issuesModel.removeAllElements();
         issuesModel.addAll(issues);
-        issuesList.setSelectedValue(selected, true);
-
+                
     }
 
     @Override
