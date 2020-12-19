@@ -24,8 +24,9 @@ repositories {
     google()
 }
 dependencies {
-    compile 'org.kohsuke:github-api:1.117'
-
+    compile 'org.kohsuke:github-api:1.117',
+            'junit:junit:4.13',
+            'org.jmock:jmock-junit4:2.12.0'
 
 
 }

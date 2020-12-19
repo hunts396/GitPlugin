@@ -3,6 +3,7 @@ package com.kvk.plugins.git.gui.menu;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.components.JBList;
 import com.kvk.plugins.git.GPApiForIDEA;
+import com.kvk.plugins.git.GPApiForIDEAInt;
 import org.jetbrains.annotations.Nullable;
 import org.kohsuke.github.*;
 
@@ -12,7 +13,6 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class GitAccountWindow extends DialogWrapper {
@@ -20,7 +20,8 @@ public class GitAccountWindow extends DialogWrapper {
     private JLabel gitUsername;
     private JBList<GHIssue> issuesList;
     private DefaultListModel<GHIssue> issuesModel;
-    GHMyself myself;
+    private GHMyself myself;
+    private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
 
     public GitAccountWindow(GitHub gitHub) {
         super(true);
@@ -32,7 +33,7 @@ public class GitAccountWindow extends DialogWrapper {
         try {
             myself = gitHub.getMyself();
             ImageIcon avatarIcon = new ImageIcon(
-                    GPApiForIDEA.resizeAvatar(
+                    gitApi.resizeAvatar(
                             ImageIO.read(new URL(myself.getAvatarUrl()))
                     )
             );
@@ -41,7 +42,7 @@ public class GitAccountWindow extends DialogWrapper {
             gitUsername.setIcon(avatarIcon);
             setAssignedIssues();
         } catch (IOException e){
-            GPApiForIDEA.showConnectErrorMessage(e);
+            gitApi.showConnectErrorMessage(e);
         }
 
 
@@ -52,7 +53,8 @@ public class GitAccountWindow extends DialogWrapper {
                         setAssignedIssues();
                         Thread.sleep(3000);
                     } catch (IOException | InterruptedException e) {
-                        GPApiForIDEA.showErrorMessage(e);
+
+                        gitApi.showErrorMessage(e);
                     }
                 }
             }
@@ -69,7 +71,7 @@ public class GitAccountWindow extends DialogWrapper {
         }
         issuesModel.removeAllElements();
         issuesModel.addAll(issues);
-                
+
     }
 
     @Override

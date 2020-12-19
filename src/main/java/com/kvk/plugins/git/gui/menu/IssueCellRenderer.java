@@ -1,10 +1,8 @@
 package com.kvk.plugins.git.gui.menu;
 
-import com.intellij.ui.components.JBLabel;
 import org.kohsuke.github.GHIssue;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 
 public class IssueCellRenderer extends JLabel implements ListCellRenderer<GHIssue> {

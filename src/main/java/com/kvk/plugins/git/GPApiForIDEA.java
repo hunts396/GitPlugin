@@ -12,35 +12,48 @@ import java.io.IOException;
 import java.net.URI;
 
 // class for solving simple git plugin tasks
-public class GPApiForIDEA {
-    private static final int AVATAR_WIDTH = 25, AVATAR_HEIGHT = 25;
-    private static final URI CREATE_TOKEN_URI = URI.create("https://github.com/settings/tokens");
-    private static final String SERVICE_NAME = "git-token:GitPlugin";
 
-    public static GitHub connect(String token) throws IOException {
+public class GPApiForIDEA implements GPApiForIDEAInt{
+    private final int AVATAR_WIDTH = 25, AVATAR_HEIGHT = 25;
+    private final URI CREATE_TOKEN_URI = URI.create("https://github.com/settings/tokens");
+    private final String SERVICE_NAME = "git-token:GitPlugin";
+    private static final GPApiForIDEA instance = new GPApiForIDEA();
+
+    private GPApiForIDEA(){
+
+    }
+    public static GPApiForIDEA getInstance(){
+        return instance;
+    }
+    @Override
+    public GitHub connect(String token) throws IOException {
         GitHubBuilder ghb = new GitHubBuilder().withOAuthToken(token);
         ghb.withRateLimitHandler(RateLimitHandler.WAIT).
                 withAbuseLimitHandler(AbuseLimitHandler.WAIT);
         return ghb.build();
     }
 
-    public static void createCredentials(GitHub gitHub, String token) throws IOException {
+    @Override
+    public void createCredentials(GitHub gitHub, String token) throws IOException {
         CredentialAttributes attributes = new CredentialAttributes(SERVICE_NAME);
         Credentials credentials = new Credentials(gitHub.getMyself().getLogin(), token);
         PasswordSafe.getInstance().set(attributes, credentials);
     }
 
-    public static void removeCredentials(){
+    @Override
+    public void removeCredentials(){
         CredentialAttributes attributes = new CredentialAttributes(SERVICE_NAME);
         PasswordSafe.getInstance().set(attributes, null);
     }
 
-    public static Credentials getCredentials(){
+    @Override
+    public Credentials getCredentials(){
         CredentialAttributes savedAttributes = new CredentialAttributes(SERVICE_NAME);
         return PasswordSafe.getInstance().get(savedAttributes);
     }
 
-    public static Image resizeAvatar(Image avatar){
+    @Override
+    public Image resizeAvatar(Image avatar){
         BufferedImage resizedAvatar = new BufferedImage(AVATAR_WIDTH, AVATAR_HEIGHT, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = resizedAvatar.createGraphics();
         g.drawImage(avatar, 0, 0, AVATAR_WIDTH, AVATAR_HEIGHT, null);
@@ -48,7 +61,8 @@ public class GPApiForIDEA {
         return resizedAvatar;
     }
 
-    public static void showConnectErrorMessage(Exception e){
+    @Override
+    public void showConnectErrorMessage(Exception e){
         JOptionPane.showMessageDialog(
                 null,
                 "Can not connect to github account\n" + e.getMessage(),
@@ -56,7 +70,9 @@ public class GPApiForIDEA {
                 JOptionPane.ERROR_MESSAGE
         );
     }
-    public static void showErrorMessage(Exception e){
+
+    @Override
+    public void showErrorMessage(Exception e){
         JOptionPane.showMessageDialog(
                 null,
                 e.getMessage(),
@@ -65,7 +81,8 @@ public class GPApiForIDEA {
         );
     }
 
-    public static void redirectToGeneratingToken(){
+    @Override
+    public void redirectToGeneratingToken(){
         Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
         if(desktop != null && desktop.isSupported(Desktop.Action.BROWSE)){
             try{

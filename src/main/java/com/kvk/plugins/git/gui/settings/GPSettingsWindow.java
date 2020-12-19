@@ -2,22 +2,18 @@ package com.kvk.plugins.git.gui.settings;
 
 import com.intellij.credentialStore.Credentials;
 import com.intellij.openapi.options.Configurable;
-import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.util.NlsContexts;
-import com.intellij.ui.components.JBLabel;
 import com.kvk.plugins.git.GPApiForIDEA;
+import com.kvk.plugins.git.GPApiForIDEAInt;
 import org.jetbrains.annotations.Nullable;
 import org.kohsuke.github.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 public class GPSettingsWindow implements Configurable {
@@ -29,21 +25,22 @@ public class GPSettingsWindow implements Configurable {
 
     private boolean isRemoved;
     private String prevToken = "";
+    private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
 
     public GPSettingsWindow() {
 
 
-        Credentials c = GPApiForIDEA.getCredentials();
+        Credentials c = gitApi.getCredentials();
         GHMyself myself = null;
         if (c != null) {
             prevToken = c.getPasswordAsString();
             try {
 
-                GitHub gitHub = GPApiForIDEA.connect(prevToken);
+                GitHub gitHub = gitApi.connect(prevToken);
                 myself = gitHub.getMyself();
                 tokenTextField.setText(prevToken);
             } catch (IOException e) {
-                GPApiForIDEA.removeCredentials();
+                gitApi.removeCredentials();
             }
         }
         try {
@@ -72,7 +69,7 @@ public class GPSettingsWindow implements Configurable {
             textLabel.setText(myself.getLogin());
             textLabel.setIcon(
                     new ImageIcon(
-                            GPApiForIDEA.resizeAvatar(ImageIO.read(new URL(myself.getAvatarUrl())))
+                            gitApi.resizeAvatar(ImageIO.read(new URL(myself.getAvatarUrl())))
                     )
             );
             refToBrowsLabel.setText("");
@@ -85,7 +82,7 @@ public class GPSettingsWindow implements Configurable {
             refToBrowsLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    GPApiForIDEA.redirectToGeneratingToken();
+                    gitApi.redirectToGeneratingToken();
                 }
             });
             tokenTextField.setText("");
@@ -110,7 +107,7 @@ public class GPSettingsWindow implements Configurable {
     @Override
     public void apply() {
         if (isRemoved) {
-            GPApiForIDEA.removeCredentials();
+            gitApi.removeCredentials();
             isRemoved = false;
         }
 
@@ -118,12 +115,12 @@ public class GPSettingsWindow implements Configurable {
         String newToken = tokenTextField.getText();
         if (!newToken.equals(prevToken)) {
             try {
-                GitHub gitHub = GPApiForIDEA.connect(newToken);
-                GPApiForIDEA.createCredentials(gitHub, newToken);
+                GitHub gitHub = gitApi.connect(newToken);
+                gitApi.createCredentials(gitHub, newToken);
                 setAccountInfo(gitHub.getMyself());
                 prevToken = newToken;
             } catch (IOException e) {
-                GPApiForIDEA.showConnectErrorMessage(e);
+                gitApi.showConnectErrorMessage(e);
                 tokenTextField.setText(prevToken);
             }
         }
