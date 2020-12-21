@@ -25,13 +25,23 @@ public class GPSettingsWindow implements Configurable {
 
     private boolean isRemoved;
     private String prevToken = "";
+    private GHMyself myself;
     private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
 
     public GPSettingsWindow() {
+        initGitHubUI();
+        initUIComponents();
+    }
+
+    public GPSettingsWindow(GPApiForIDEAInt api){
+        gitApi = api;
+        initGitHubUI();
+        initUIComponents();
+    }
 
 
+    public void initGitHubUI(){
         Credentials c = gitApi.getCredentials();
-        GHMyself myself = null;
         if (c != null) {
             prevToken = c.getPasswordAsString();
             try {
@@ -44,26 +54,27 @@ public class GPSettingsWindow implements Configurable {
             }
         }
         try {
-            setAccountInfo(myself);
+            setAccountInfo();
         } catch (IOException ignored) {}
+    }
+
+    private void initUIComponents(){
         removeButton.addActionListener(e -> {
             prevToken = "";
             isRemoved = true;
+            myself = null;
             try {
-                setAccountInfo(null);
+                setAccountInfo();
             } catch (IOException ignored) {
             }
         });
-
-
     }
-
     /*
     UI Account settings
     if account removed or not logged in - delete all text from tokenTextField and offer user to create token
     if account is logged in - show avatar and username, paste his personal token
     */
-    protected void setAccountInfo(GHMyself myself) throws IOException {
+    public void setAccountInfo() throws IOException {
 
         if (myself != null) {
             textLabel.setText(myself.getLogin());
@@ -76,6 +87,7 @@ public class GPSettingsWindow implements Configurable {
             refToBrowsLabel.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
         } else {
             textLabel.setText("No accounts here");
+            textLabel.setIcon(null);
             refToBrowsLabel.setText("<html><a href=\"#\">create token</a></html");
             refToBrowsLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
@@ -117,13 +129,30 @@ public class GPSettingsWindow implements Configurable {
             try {
                 GitHub gitHub = gitApi.connect(newToken);
                 gitApi.createCredentials(gitHub, newToken);
-                setAccountInfo(gitHub.getMyself());
+                myself = gitHub.getMyself();
+                setAccountInfo();
                 prevToken = newToken;
             } catch (IOException e) {
                 gitApi.showConnectErrorMessage(e);
                 tokenTextField.setText(prevToken);
             }
         }
+    }
+
+    public JTextField getTokenTextField() {
+        return tokenTextField;
+    }
+
+    public JLabel getRefToBrowsLabel() {
+        return refToBrowsLabel;
+    }
+
+    public JLabel getTextLabel() {
+        return textLabel;
+    }
+
+    public JButton getRemoveButton() {
+        return removeButton;
     }
 
 }

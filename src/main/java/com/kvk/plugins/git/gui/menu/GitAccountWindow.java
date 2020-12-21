@@ -23,13 +23,32 @@ public class GitAccountWindow extends DialogWrapper {
     private GHMyself myself;
     private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
 
-    public GitAccountWindow(GitHub gitHub) {
+    public GitAccountWindow(GitHub gitHub, GPApiForIDEAInt api){
         super(true);
         init();
 
+        gitApi = api;
+        initAll(gitHub);
+    }
+
+    public GitAccountWindow(GitHub gitHub) {
+        super(true);
+        init();
+        initAll(gitHub);
+
+    }
+    public void initAll(GitHub gitHub){
+        initMainUI();
+        initGitUI(gitHub);
+        startRefreshing();
+    }
+
+    public void initMainUI(){
         setTitle("Git Profile");
         mainPanel.setPreferredSize(new Dimension(500, 500));
         setResizable(false);
+    }
+    public void initGitUI(GitHub gitHub){
         try {
             myself = gitHub.getMyself();
             ImageIcon avatarIcon = new ImageIcon(
@@ -44,8 +63,9 @@ public class GitAccountWindow extends DialogWrapper {
         } catch (IOException e){
             gitApi.showConnectErrorMessage(e);
         }
+    }
 
-
+    public void startRefreshing(){
         Thread refreshIssuesThread = new Thread(() -> {
             if(myself != null) {
                 while (true) {
@@ -62,8 +82,7 @@ public class GitAccountWindow extends DialogWrapper {
         refreshIssuesThread.start();
     }
 
-
-    private void setAssignedIssues() throws IOException {
+    public void setAssignedIssues() throws IOException {
         ArrayList<GHIssue> issues = new ArrayList<>();
         Map<String, GHRepository> allRepositories = myself.getAllRepositories();
         for (Map.Entry<String, GHRepository> rep : allRepositories.entrySet()) {
@@ -74,16 +93,31 @@ public class GitAccountWindow extends DialogWrapper {
 
     }
 
-    @Override
-    protected @Nullable JComponent createCenterPanel() {
-        return mainPanel;
-    }
 
-    private void createUIComponents() {
+    public void createUIComponents() {
         issuesModel = new DefaultListModel<>();
 
         issuesList = new JBList<>(issuesModel);
         issuesList.setCellRenderer(new IssueCellRenderer());
         issuesList.setEmptyText("No assigned issues");
     }
+
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return mainPanel;
+    }
+
+    public JLabel getGitUsername() {
+        return gitUsername;
+    }
+
+    public JBList<GHIssue> getIssuesList() {
+        return issuesList;
+    }
+
+    public DefaultListModel<GHIssue> getIssuesModel() {
+        return issuesModel;
+    }
+
 }

@@ -3,6 +3,7 @@ package com.kvk.plugins.git;
 import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
+import com.intellij.openapi.ui.Messages;
 import org.kohsuke.github.*;
 
 import javax.swing.*;
@@ -63,22 +64,13 @@ public class GPApiForIDEA implements GPApiForIDEAInt{
 
     @Override
     public void showConnectErrorMessage(Exception e){
-        JOptionPane.showMessageDialog(
-                null,
-                "Can not connect to github account\n" + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE
-        );
+        Messages.showErrorDialog("Can not connect to github account\n" + e.getMessage(), "Error");
     }
 
     @Override
     public void showErrorMessage(Exception e){
-        JOptionPane.showMessageDialog(
-                null,
-                e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE
-        );
+        Messages.showErrorDialog(e.getMessage(), "Error");
+
     }
 
     @Override
