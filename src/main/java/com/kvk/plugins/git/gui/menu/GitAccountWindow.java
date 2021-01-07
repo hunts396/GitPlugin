@@ -1,9 +1,10 @@
 package com.kvk.plugins.git.gui.menu;
 
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.ui.components.JBList;
-import com.kvk.plugins.git.GPApiForIDEA;
-import com.kvk.plugins.git.GPApiForIDEAInt;
+import com.kvk.plugins.git.gui.images.DefaultAvatarSettings;
+import com.kvk.plugins.git.gui.images.ImageResizer;
 import org.jetbrains.annotations.Nullable;
 import org.kohsuke.github.*;
 
@@ -21,15 +22,7 @@ public class GitAccountWindow extends DialogWrapper {
     private JBList<GHIssue> issuesList;
     private DefaultListModel<GHIssue> issuesModel;
     private GHMyself myself;
-    private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
 
-    public GitAccountWindow(GitHub gitHub, GPApiForIDEAInt api){
-        super(true);
-        init();
-
-        gitApi = api;
-        initAll(gitHub);
-    }
 
     public GitAccountWindow(GitHub gitHub) {
         super(true);
@@ -52,8 +45,10 @@ public class GitAccountWindow extends DialogWrapper {
         try {
             myself = gitHub.getMyself();
             ImageIcon avatarIcon = new ImageIcon(
-                    gitApi.resizeAvatar(
-                            ImageIO.read(new URL(myself.getAvatarUrl()))
+                    ImageResizer.resizeImage(
+                            ImageIO.read(new URL(myself.getAvatarUrl())),
+                            DefaultAvatarSettings.WIDTH,
+                            DefaultAvatarSettings.HEIGHT
                     )
             );
 
@@ -61,7 +56,7 @@ public class GitAccountWindow extends DialogWrapper {
             gitUsername.setIcon(avatarIcon);
             setAssignedIssues();
         } catch (IOException e){
-            gitApi.showConnectErrorMessage(e);
+            Messages.showErrorDialog("Can not connect to github account\n" + e.getMessage(), "Error");
         }
     }
 
@@ -74,7 +69,7 @@ public class GitAccountWindow extends DialogWrapper {
                         Thread.sleep(3000);
                     } catch (IOException | InterruptedException e) {
 
-                        gitApi.showErrorMessage(e);
+                        Messages.showErrorDialog(e.getMessage(), "Error");
                     }
                 }
             }

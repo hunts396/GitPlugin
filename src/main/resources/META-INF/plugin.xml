@@ -17,7 +17,11 @@
         <projectConfigurable parentId="tools" instance="com.kvk.plugins.git.gui.settings.GPSettingsWindow"
                                  id="com.kvk.plugins.git.GitSettings"
                                     nonDefaultProject="true"/>
-
+        <applicationService
+                serviceInterface="org.kohsuke.github.GitHubBuilder"
+                serviceImplementation="org.kohsuke.github.GitHubBuilder"
+                testServiceImplementation="com.kvk.plugins.git.FakeGitHubBuilder"
+                headlessImplementation="com.kvk.plugins.git.FakeGitHubBuilder"/>
 
     </extensions>
 

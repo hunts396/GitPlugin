@@ -1,14 +1,12 @@
 package com.kvk.plugins.git.actions;
 
-import com.intellij.credentialStore.Credentials;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 
-import com.intellij.openapi.actionSystem.Presentation;
-import com.kvk.plugins.git.GPApiForIDEA;
-import com.kvk.plugins.git.GPApiForIDEAInt;
+import com.intellij.openapi.components.ServiceManager;
+import com.intellij.openapi.ui.Messages;
+import com.kvk.plugins.git.api.GitCredentials;
 import com.kvk.plugins.git.gui.menu.GitAccountWindow;
-import git4idea.commands.Git;
 import org.jetbrains.annotations.NotNull;
 import org.kohsuke.github.*;
 
@@ -17,11 +15,6 @@ import java.io.*;
 
 public class GPAction extends AnAction {
 
-    private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
-
-    public void setGitApi(GPApiForIDEAInt api){
-        gitApi = api;
-    }
 
     // Make menu item inactive if account is not logged in
     @Override
@@ -31,13 +24,17 @@ public class GPAction extends AnAction {
 
 
     // returns true if credentials correct and false otherwise
-    public boolean isBlocked(){
-        Credentials c = gitApi.getCredentials();
-        if(c == null) {
+    public boolean isBlocked() {
+
+        GitCredentials c = GitCredentials.get();
+        if (!c.isPerformed())
             return false;
-        }
-        try{
-            gitApi.connect(c.getPasswordAsString());
+
+        try {
+            ServiceManager.getService(GitHubBuilder.class)
+                    .withOAuthToken(c.getToken())
+                    .withRateLimitHandler(RateLimitHandler.WAIT)
+                    .withAbuseLimitHandler(AbuseLimitHandler.WAIT).build();
         } catch (IOException ioException) {
             return false;
         }
@@ -45,21 +42,23 @@ public class GPAction extends AnAction {
     }
 
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        String token;
-        Credentials c = gitApi.getCredentials();
-        if(c != null)
-            token = c.getPasswordAsString();
-        else return;
+    public void actionPerformed(@NotNull AnActionEvent event) {
+
+        GitCredentials c = GitCredentials.get();
+        if (!c.isPerformed())
+            return;
 
         try {
-            GitHub gitHub = gitApi.connect(token);
+            GitHub gitHub = ServiceManager.getService(GitHubBuilder.class)
+                    .withOAuthToken(c.getToken())
+                    .withRateLimitHandler(RateLimitHandler.WAIT)
+                    .withAbuseLimitHandler(AbuseLimitHandler.WAIT).build();
 
             GitAccountWindow accountWindow = new GitAccountWindow(gitHub);
             accountWindow.showAndGet();
 
-        } catch (IOException ioException) {
-            gitApi.showConnectErrorMessage(ioException);
+        } catch (IOException e) {
+            Messages.showErrorDialog("Can not connect to github account\n" + e.getMessage(), "Error");
         }
 
     }

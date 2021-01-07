@@ -1,10 +1,13 @@
 package com.kvk.plugins.git.gui.settings;
 
-import com.intellij.credentialStore.Credentials;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.options.Configurable;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.NlsContexts;
-import com.kvk.plugins.git.GPApiForIDEA;
-import com.kvk.plugins.git.GPApiForIDEAInt;
+import com.kvk.plugins.git.api.BrowserRouter;
+import com.kvk.plugins.git.api.GitCredentials;
+import com.kvk.plugins.git.gui.images.DefaultAvatarSettings;
+import com.kvk.plugins.git.gui.images.ImageResizer;
 import org.jetbrains.annotations.Nullable;
 import org.kohsuke.github.*;
 
@@ -17,6 +20,8 @@ import java.io.IOException;
 import java.net.URL;
 
 public class GPSettingsWindow implements Configurable {
+    private static final String GENERATE_URL = "https://github.com/settings/tokens";
+
     private JPanel mainPanel;
     private JTextField tokenTextField;
     private JLabel refToBrowsLabel;
@@ -26,31 +31,29 @@ public class GPSettingsWindow implements Configurable {
     private boolean isRemoved;
     private String prevToken = "";
     private GHMyself myself;
-    private GPApiForIDEAInt gitApi = GPApiForIDEA.getInstance();
+
 
     public GPSettingsWindow() {
         initGitHubUI();
         initUIComponents();
     }
 
-    public GPSettingsWindow(GPApiForIDEAInt api){
-        gitApi = api;
-        initGitHubUI();
-        initUIComponents();
-    }
-
-
     public void initGitHubUI(){
-        Credentials c = gitApi.getCredentials();
-        if (c != null) {
-            prevToken = c.getPasswordAsString();
+        GitCredentials c = GitCredentials.get();
+        if (c.isPerformed()) {
+            prevToken = c.getToken();
             try {
 
-                GitHub gitHub = gitApi.connect(prevToken);
+                GitHub gitHub = ServiceManager.getService(GitHubBuilder.class)
+                        .withOAuthToken(c.getToken())
+                        .withRateLimitHandler(RateLimitHandler.WAIT)
+                        .withAbuseLimitHandler(AbuseLimitHandler.WAIT).build();
+
                 myself = gitHub.getMyself();
                 tokenTextField.setText(prevToken);
             } catch (IOException e) {
-                gitApi.removeCredentials();
+                c.clear();
+                c.save();
             }
         }
         try {
@@ -80,7 +83,11 @@ public class GPSettingsWindow implements Configurable {
             textLabel.setText(myself.getLogin());
             textLabel.setIcon(
                     new ImageIcon(
-                            gitApi.resizeAvatar(ImageIO.read(new URL(myself.getAvatarUrl())))
+                            ImageResizer.resizeImage(
+                                    ImageIO.read(new URL(myself.getAvatarUrl())),
+                                    DefaultAvatarSettings.WIDTH,
+                                    DefaultAvatarSettings.HEIGHT
+                            )
                     )
             );
             refToBrowsLabel.setText("");
@@ -94,7 +101,15 @@ public class GPSettingsWindow implements Configurable {
             refToBrowsLabel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    gitApi.redirectToGeneratingToken();
+                    try {
+                        new BrowserRouter(GENERATE_URL).route();
+                    } catch (IOException ioException) {
+                        Messages.showErrorDialog(
+                                "Error browsing git create token uri\n" + ioException.getMessage(),
+                                "Error"
+                                );
+                    }
+
                 }
             });
             tokenTextField.setText("");
@@ -119,22 +134,35 @@ public class GPSettingsWindow implements Configurable {
     @Override
     public void apply() {
         if (isRemoved) {
-            gitApi.removeCredentials();
-            isRemoved = false;
+            //gitApi.removeCredentials();
+            GitCredentials c = GitCredentials.get();
+            c.clear();
+            c.save();
+            isRemoved = !c.isEstablished();
         }
 
 
         String newToken = tokenTextField.getText();
         if (!newToken.equals(prevToken)) {
             try {
-                GitHub gitHub = gitApi.connect(newToken);
-                gitApi.createCredentials(gitHub, newToken);
+                GitHub gitHub = ServiceManager.getService(GitHubBuilder.class)
+                        .withOAuthToken(newToken)
+                        .withRateLimitHandler(RateLimitHandler.WAIT)
+                        .withAbuseLimitHandler(AbuseLimitHandler.WAIT).build();
+
+                //gitApi.createCredentials(gitHub, newToken);
+                GitCredentials c = new GitCredentials(gitHub.getMyself().getLogin(), newToken);
+                if(c.isPerformed())
+                    c.save();
+                if(!c.isEstablished())
+                    return;
+
                 myself = gitHub.getMyself();
                 setAccountInfo();
                 prevToken = newToken;
             } catch (IOException e) {
-                gitApi.showConnectErrorMessage(e);
                 tokenTextField.setText(prevToken);
+                Messages.showErrorDialog("Can not connect to github account\n" + e.getMessage(), "Error");
             }
         }
     }
